@@ -36,13 +36,18 @@ window.app = {
 $$('.section-tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const section = btn.dataset.section;
-    state.activeSection = section;
-    $$('.section-tab').forEach(b => b.classList.toggle('active', b === btn));
-    $$('.section').forEach(s => s.classList.toggle('active', s.id === `section-${section}`));
-    refreshSection(section);
-    updateFab();
+    switchSection(section);
   });
 });
+
+function switchSection(section) {
+  state.activeSection = section;
+  location.hash = section;
+  $$('.section-tab').forEach(b => b.classList.toggle('active', b.dataset.section === section));
+  $$('.section').forEach(s => s.classList.toggle('active', s.id === `section-${section}`));
+  refreshSection(section);
+  updateFab();
+}
 
 function updateFab() {
   const fab = $('#fab');
@@ -188,7 +193,9 @@ async function init() {
   initArchief();
   initDashboard();
   initSocket();
-  refreshSection('campagne');
+  const hashSection = location.hash.replace('#', '');
+  const validSections = ['campagne', 'archief', 'dashboard'];
+  switchSection(validSections.includes(hashSection) ? hashSection : 'campagne');
 }
 
 init();

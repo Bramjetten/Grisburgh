@@ -119,8 +119,10 @@ function renderDocCard(d) {
   const npcs = (d.npcs || []).filter(n => !(hiddenLinks.npcs || []).includes(n));
   const locs = (d.locs || []).filter(n => !(hiddenLinks.locs || []).includes(n));
 
+  const isBlurred = !isDM() && state === 'blurred';
+
   return `
-    <div class="border rounded-lg cursor-pointer hover:-translate-y-0.5 hover:shadow-deep transition relative cat-${d.cat || 'brieven'} ${state !== 'revealed' && isDM() ? 'state-' + state : ''}"
+    <div class="border rounded-lg cursor-pointer hover:-translate-y-0.5 hover:shadow-deep transition relative cat-${d.cat || 'brieven'} ${isDM() && state !== 'revealed' ? 'state-' + state : ''}"
       onclick="window._openDoc('${d.id}')">
       ${isDM() ? `
         <div class="dm-only absolute top-2 right-2 z-10 flex gap-0.5 bg-black/80 rounded p-0.5">
@@ -131,7 +133,7 @@ function renderDocCard(d) {
           `).join('')}
         </div>
       ` : ''}
-      <img class="w-full h-32 object-cover rounded-t-lg" src="${api.fileUrl(d.id)}"
+      <img class="w-full h-32 object-cover rounded-t-lg ${isBlurred ? 'blur-lg select-none' : ''}" src="${api.fileUrl(d.id)}"
         onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
       <div class="h-1 rounded-t-lg" style="display:none"></div>
       <div class="doc-card-body p-4">
@@ -142,11 +144,14 @@ function renderDocCard(d) {
             <div class="text-xs opacity-60">${esc(d.type)}${chapterLabel ? ' \u00b7 ' + esc(chapterLabel) : ''}</div>
           </div>
         </div>
-        ${d.desc ? `<p class="text-sm opacity-80 line-clamp-2 mb-2">${esc(d.desc)}</p>` : ''}
-        <div class="flex flex-wrap gap-1">
-          ${npcs.slice(0,2).map(n => `<span class="chip chip-npc">\ud83d\udc64 ${esc(n)}</span>`).join('')}
-          ${locs.slice(0,2).map(n => `<span class="chip chip-loc">\ud83c\udff0 ${esc(n)}</span>`).join('')}
-        </div>
+        ${isBlurred
+          ? `<p class="text-sm opacity-50 italic">Dit document is nog niet volledig onthuld</p>`
+          : `${d.desc ? `<p class="text-sm opacity-80 line-clamp-2 mb-2">${esc(d.desc)}</p>` : ''}
+             <div class="flex flex-wrap gap-1">
+               ${npcs.slice(0,2).map(n => `<span class="chip chip-npc">\ud83d\udc64 ${esc(n)}</span>`).join('')}
+               ${locs.slice(0,2).map(n => `<span class="chip chip-loc">\ud83c\udff0 ${esc(n)}</span>`).join('')}
+             </div>`
+        }
       </div>
     </div>
   `;
@@ -217,45 +222,13 @@ window._openDoc = async (id) => {
     body += `<p class="text-sm mb-4 ${isBlurred ? 'blur-sm select-none' : ''}">${esc(d.desc)}</p>`;
   }
 
-  // Image
-  body += `
-    <div class="mb-4 ${isBlurred ? 'blur-md select-none pointer-events-none' : ''}">
-      <img src="${api.fileUrl(d.id)}" class="w-full max-h-80 object-contain rounded cursor-pointer"
-        onclick="window.app.openLightbox('${api.fileUrl(d.id)}','${esc(d.name)}')"
-        onerror="this.parentElement.style.display='none'">
-    </div>
-  `;
+  // File (image or PDF) — detect type first, render after modal is open
+  const fileUrl = api.fileUrl(d.id);
+  body += `<div class="mb-4" id="doc-file-container-${d.id}"></div>`;
 
   // Parchment text
   if (tekst) {
     body += `<div class="parchment-block mb-4 ${isBlurred ? 'blur-md select-none pointer-events-none' : ''}">${renderParchment(tekst)}</div>`;
-  }
-
-  // Upload zone (DM)
-  if (isDM()) {
-    body += `
-      <div class="dm-only mb-4">
-        <div class="upload-zone" onclick="document.getElementById('doc-file-${d.id}').click()">
-          \ud83d\udcf7 Afbeelding uploaden
-        </div>
-        <input type="file" id="doc-file-${d.id}" accept="image/*" class="hidden"
-          onchange="window._uploadDocFile('${d.id}',this.files[0])">
-      </div>
-    `;
-  }
-
-  // Parchment text editor (DM)
-  if (isDM()) {
-    body += `
-      <div class="dm-only mb-4">
-        <div class="text-xs font-cinzel text-ink-dim font-bold uppercase tracking-wider mb-1">Perkament tekst</div>
-        <textarea id="tekst-editor-${d.id}" rows="6"
-          class="w-full px-3 py-2 bg-parchment-letter text-[#2a2015] font-fell text-sm border border-[#d4c9a8] rounded focus:outline-none"
-          placeholder="---titel---\nDocument Titel\n---\nTekst hier...\n--handtekening--\nNaam"
-          oninput="window._saveTekst('${d.id}')">${esc(tekst)}</textarea>
-        <div id="tekst-save-${d.id}" class="text-xs text-green-wax opacity-0 transition-opacity mt-1"></div>
-      </div>
-    `;
   }
 
   // Connections
@@ -308,7 +281,7 @@ window._openDoc = async (id) => {
   if (isDM()) {
     body += `
       <div class="dm-only mt-4 pt-4 border-t border-room-border">
-        <div class="flex gap-2 mb-3">
+        <div class="flex gap-2">
           ${['hidden','blurred','revealed'].map(s => `
             <button class="px-3 py-1 text-sm rounded transition ${state === s ? 'bg-gold-dim text-room-bg font-semibold' : 'bg-room-elevated text-ink-dim hover:text-ink-bright'}"
               onclick="window._setDocState('${d.id}','${s}')">
@@ -320,10 +293,6 @@ window._openDoc = async (id) => {
             \u270f Bewerken
           </button>
         </div>
-        <div class="text-xs font-cinzel text-ink-dim font-bold uppercase tracking-wider mb-1">DM Notities</div>
-        <textarea id="dm-note-doc-${d.id}" class="w-full min-h-[60px] px-3 py-2 bg-room-bg border border-room-border rounded text-sm text-ink-bright font-crimson focus:border-gold-dim focus:outline-none"
-          placeholder="Notities...">${esc(d._dmNote || '')}</textarea>
-        <div id="note-save-doc-${d.id}" class="text-xs text-green-wax opacity-0 transition-opacity mt-1"></div>
       </div>
     `;
   }
@@ -331,20 +300,29 @@ window._openDoc = async (id) => {
   const subtitle = [d.type, meta?.hoofdstukken?.[d.hoofdstuk]?.short].filter(Boolean).join(' \u00b7 ');
   openModal(d.name, subtitle, body);
 
-  // DM note auto-save
-  if (isDM()) {
-    let noteTimer;
-    const ta = document.getElementById(`dm-note-doc-${d.id}`);
-    if (ta) {
-      ta.addEventListener('input', () => {
-        clearTimeout(noteTimer);
-        noteTimer = setTimeout(async () => {
-          await api.saveNote(d.id, ta.value);
-          const ind = document.getElementById(`note-save-doc-${d.id}`);
-          if (ind) { ind.textContent = '\u2713 Opgeslagen'; ind.style.opacity = '1'; setTimeout(() => ind.style.opacity = '0', 1200); }
-        }, 400);
-      });
-    }
+  // Load file into container after modal is in DOM
+  const fileContainer = document.getElementById(`doc-file-container-${d.id}`);
+  if (fileContainer) {
+    try {
+      const headRes = await fetch(fileUrl, { method: 'HEAD' });
+      if (!headRes.ok) { fileContainer.style.display = 'none'; }
+      else {
+        const ct = headRes.headers.get('content-type') || '';
+        if (isBlurred) {
+          if (ct.includes('image')) {
+            fileContainer.innerHTML = `<img src="${fileUrl}" class="w-full max-h-80 object-contain rounded blur-xl select-none pointer-events-none">`;
+          } else {
+            fileContainer.innerHTML = `<div class="rounded bg-room-elevated p-8 text-center select-none"><div class="text-4xl mb-2 opacity-30">\ud83d\udd12</div><div class="text-ink-faint text-sm italic">Document nog niet volledig onthuld</div></div>`;
+          }
+        } else if (ct.includes('pdf')) {
+          await renderPdfViewer(fileContainer, fileUrl);
+        } else if (ct.includes('image')) {
+          fileContainer.innerHTML = `<img src="${fileUrl}" class="w-full max-h-80 object-contain rounded cursor-pointer" onclick="window.app.openLightbox('${fileUrl}','${esc(d.name)}')">`;
+        } else {
+          fileContainer.style.display = 'none';
+        }
+      }
+    } catch { fileContainer.style.display = 'none'; }
   }
 };
 
@@ -408,10 +386,50 @@ window._saveTekst = (id) => {
 // ── File upload ──
 window._uploadDocFile = async (id, file) => {
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) return alert('Max 2MB');
+  if (file.size > 10 * 1024 * 1024) return alert('Max 10MB');
   await api.uploadFile(id, file);
   window._openDoc(id);
 };
+
+// If img fails to load, check if it's a PDF and embed it instead
+window._tryPdfEmbed = async (id, imgEl) => {
+  const container = document.getElementById(`doc-file-container-${id}`);
+  if (!container) return;
+  try {
+    const res = await fetch(api.fileUrl(id), { method: 'HEAD' });
+    if (!res.ok) { container.style.display = 'none'; return; }
+    const ct = res.headers.get('content-type') || '';
+    if (ct.includes('pdf')) {
+      renderPdfViewer(container, api.fileUrl(id));
+    } else {
+      container.style.display = 'none';
+    }
+  } catch {
+    container.style.display = 'none';
+  }
+};
+
+async function renderPdfViewer(container, url) {
+  const pdf = await window.pdfjsLib.getDocument(url).promise;
+  container.innerHTML = '<div class="flex flex-col gap-3"></div>';
+  const stack = container.firstElementChild;
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const scale = container.clientWidth / page.getViewport({ scale: 1 }).width;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.className = 'w-full rounded border border-room-border cursor-pointer hover:border-gold-dim transition';
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+    canvas.addEventListener('click', () => {
+      const dataUrl = canvas.toDataURL();
+      window.app.openLightbox(dataUrl, `Pagina ${i}`);
+    });
+    stack.appendChild(canvas);
+  }
+}
 
 // ── Editor ──
 export function openArchiefEditor(editId) {
@@ -466,6 +484,15 @@ window._openArchiefEditor = async (editId) => {
       <textarea name="desc" rows="4"
         class="w-full mt-1 px-3 py-2 bg-room-bg border border-room-border rounded text-ink-bright text-sm focus:border-gold-dim focus:outline-none">${esc(d?.desc || '')}</textarea>
     </div>
+    <div>
+      <label class="text-xs font-cinzel text-ink-dim font-bold uppercase tracking-wider">Bestand</label>
+      <div id="editor-file-preview" class="mt-1 mb-2">${editId ? `<img src="${api.fileUrl(editId)}" class="max-h-32 rounded" onerror="this.style.display='none'">` : ''}</div>
+      <div class="upload-zone mt-1" onclick="document.getElementById('editor-file-input').click()">
+        \ud83d\udcc2 Afbeelding of PDF uploaden (max 10MB)
+      </div>
+      <input type="file" id="editor-file-input" accept="image/*,.pdf,application/pdf" class="hidden">
+      <div id="editor-file-status" class="text-xs text-green-wax opacity-0 transition-opacity mt-1"></div>
+    </div>
   `;
 
   // Tag editors
@@ -492,6 +519,32 @@ window._openArchiefEditor = async (editId) => {
     `;
   }
 
+  // Parchment text editor
+  if (editId) {
+    const tekst = archiefData.tekstContent?.[editId] || '';
+    body += `
+      <div>
+        <div class="text-xs font-cinzel text-ink-dim font-bold uppercase tracking-wider mb-1">Perkament tekst</div>
+        <textarea id="tekst-editor-${editId}" rows="6"
+          class="w-full px-3 py-2 bg-parchment-letter text-[#2a2015] font-fell text-sm border border-[#d4c9a8] rounded focus:outline-none"
+          placeholder="---titel---\nDocument Titel\n---\nTekst hier...\n--handtekening--\nNaam">${esc(tekst)}</textarea>
+      </div>
+    `;
+  }
+
+  // DM notes
+  if (editId) {
+    const dmNote = (await api.getNote(editId).catch(() => ({}))).note || '';
+    body += `
+      <div>
+        <div class="text-xs font-cinzel text-ink-dim font-bold uppercase tracking-wider mb-1">DM Notities</div>
+        <textarea id="dm-note-editor-${editId}" rows="3"
+          class="w-full px-3 py-2 bg-room-bg border border-room-border rounded text-sm text-ink-bright font-crimson focus:border-gold-dim focus:outline-none"
+          placeholder="Notities...">${esc(dmNote)}</textarea>
+      </div>
+    `;
+  }
+
   body += `
     <div class="flex gap-2 pt-2">
       <button type="submit" class="px-4 py-2 bg-gold-dim text-room-bg font-cinzel font-semibold rounded hover:bg-gold transition">\ud83d\udcbe Opslaan</button>
@@ -501,6 +554,23 @@ window._openArchiefEditor = async (editId) => {
   </form>`;
 
   openModal(editId ? 'Document bewerken' : 'Nieuw document', '', body);
+
+  // File input preview
+  document.getElementById('editor-file-input').addEventListener('change', (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { alert('Max 10MB'); ev.target.value = ''; return; }
+    const preview = document.getElementById('editor-file-preview');
+    const status = document.getElementById('editor-file-status');
+    if (file.type === 'application/pdf') {
+      preview.innerHTML = `<div class="text-sm text-ink-medium p-2 bg-room-elevated rounded">\ud83d\udcc4 ${esc(file.name)} (${(file.size / 1024 / 1024).toFixed(1)} MB)</div>`;
+    } else {
+      const url = URL.createObjectURL(file);
+      preview.innerHTML = `<img src="${url}" class="max-h-32 rounded">`;
+    }
+    status.textContent = 'Wordt geüpload bij opslaan';
+    status.style.opacity = '1';
+  });
 
   document.getElementById('archief-form').addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -517,8 +587,28 @@ window._openArchiefEditor = async (editId) => {
       docs: editorTags.docs,
     };
     try {
+      let docId = editId;
       if (editId) await api.updateArchief(editId, payload);
-      else await api.createArchief(payload);
+      else {
+        const created = await api.createArchief(payload);
+        docId = created.id;
+      }
+      // Upload file if one was selected
+      const fileInput = document.getElementById('editor-file-input');
+      if (fileInput?.files?.[0]) {
+        await api.uploadFile(docId, fileInput.files[0]);
+      }
+      // Save parchment text
+      const tekstEl = document.getElementById(`tekst-editor-${docId}`);
+      if (tekstEl) {
+        await api.saveTekst(docId, tekstEl.value);
+        archiefData.tekstContent[docId] = tekstEl.value;
+      }
+      // Save DM note
+      const noteEl = document.getElementById(`dm-note-editor-${docId}`);
+      if (noteEl) {
+        await api.saveNote(docId, noteEl.value);
+      }
       closeModal();
       renderArchief();
     } catch (err) { alert('Fout: ' + err.message); }

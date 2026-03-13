@@ -203,9 +203,9 @@ window._openDetail = async (tab, id) => {
     body += `
       <div class="dm-only mb-4">
         <div class="upload-zone" onclick="document.getElementById('file-upload-${e.id}').click()">
-          \ud83d\udcf7 Klik of sleep een afbeelding (max 2MB)
+          \ud83d\udcf7 Bestand uploaden (afbeelding of PDF, max 10MB)
         </div>
-        <input type="file" id="file-upload-${e.id}" accept="image/*" class="hidden"
+        <input type="file" id="file-upload-${e.id}" accept="image/*,.pdf,application/pdf" class="hidden"
           onchange="window._uploadFile('${tab}','${e.id}',this.files[0])">
       </div>
     `;
@@ -342,7 +342,7 @@ window._toggleSecret = async (tab, id) => {
 // ── File upload ──
 window._uploadFile = async (tab, id, file) => {
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) return alert('Max 2MB');
+  if (file.size > 10 * 1024 * 1024) return alert('Max 10MB');
   await api.uploadFile(id, file);
   window._openDetail(tab, id);
 };

@@ -46,6 +46,8 @@
     }
   </script>
   <link rel="stylesheet" href="/css/theme.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body class="bg-room-bg text-ink-bright font-crimson min-h-screen">
@@ -115,7 +117,7 @@
         </div>
         <button class="modal-close" onclick="window.app.closeModal()">&times;</button>
       </div>
-      <div class="p-5 overflow-y-auto max-h-[70vh]" id="m-body"></div>
+      <div class="p-5 overflow-y-auto flex-1 min-h-0" id="m-body"></div>
     </div>
   </div>
 
