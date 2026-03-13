@@ -13,7 +13,7 @@ Een lokaal draaiende web-app voor de Grisburgh D&D-campagne. De DM beheert perso
 
 | Sectie | Wat |
 |---|---|
-| **Campagne** | Personages, locaties, organisaties, voorwerpen — met cross-referenties, stat blocks, afbeeldingen |
+| **Campagne** | Personages, locaties, organisaties, voorwerpen — met cross-referenties, afbeeldingen, stat blocks (DM-only) |
 | **Archief** | Documenten (brieven, kaarten, codex, etc.) met 3-state onthulling: verborgen → wazig → onthuld |
 | **Dashboard** | Read-only wiki-view van alle zichtbare entities |
 
@@ -21,9 +21,12 @@ Een lokaal draaiende web-app voor de Grisburgh D&D-campagne. De DM beheert perso
 
 - Zichtbaarheid togglen per entity/document
 - Geheime velden die apart onthuld kunnen worden
+- Character stats (AC, HP, abilities) — alleen zichtbaar voor DM
 - DM-notities (alleen voor DM zichtbaar)
+- PDF en afbeelding upload (max 10MB) met inline PDF viewer
 - Perkament-tekst editor voor archief-documenten
 - Verborgen connecties (selectief NPC/locatie-links verbergen op documenten)
+- Autocomplete bij het linken van entities (kiest uit bestaande items)
 
 ## Installatie
 
@@ -35,7 +38,6 @@ Een lokaal draaiende web-app voor de Grisburgh D&D-campagne. De DM beheert perso
 ### Setup
 
 ```bash
-cd grisburgh
 nvm use           # activeert Node 24 via .nvmrc
 npm install
 ```
@@ -63,7 +65,6 @@ Server draait op http://localhost:3000
 Open een tweede terminal:
 
 ```bash
-cd grisburgh
 npm run tunnel
 ```
 
@@ -79,32 +80,32 @@ Klik op "DM Login" in de header en gebruik wachtwoord: `grisburgh-dm`
 ### Project structuur
 
 ```
-grisburgh/
-  server.js              # Express + Socket.io entry point
-  config.js              # Poort, wachtwoord, session secret
-  routes/
-    api.js               # REST API + server-side filtering
-    auth.js              # DM login + middleware
-  lib/
-    storage.js           # JSON file opslag + afbeeldingen
-  public/
-    index.html           # SPA shell (Tailwind CSS)
-    js/
-      app.js             # App shell, auth, modals
-      render-campagne.js # Entity CRUD, cards, editor
-      render-archief.js  # Documenten, onthulling, timeline
-      render-dashboard.js# Read-only wiki view
-      api.js             # Fetch wrapper
-      socket-client.js   # Real-time updates
-    css/
-      theme.css          # Custom styles (scrollbar, stat blocks, etc.)
-  data/                  # Persistent data (gitignored)
-  tests/                 # Automatische tests
+server.js              # Express + Socket.io entry point
+config.js              # Poort, wachtwoord, session secret
+routes/
+  api.js               # REST API + server-side filtering
+  auth.js              # DM login + middleware
+lib/
+  storage.js           # JSON file opslag + afbeeldingen/PDFs
+public/
+  index.html           # SPA shell (Tailwind CSS + PDF.js)
+  js/
+    app.js             # App shell, auth, modals, section routing
+    render-campagne.js # Entity CRUD, cards, editor, autocomplete links
+    render-archief.js  # Documenten, onthulling, PDF viewer, timeline
+    render-dashboard.js# Read-only wiki view
+    api.js             # Fetch wrapper + entity name lookup
+    socket-client.js   # Real-time updates
+  css/
+    theme.css          # Custom styles (scrollbar, stat blocks, autocomplete, etc.)
+data/                  # Persistent data (gitignored)
+original/              # Originele standalone HTML bestanden
+tests/                 # Automatische tests (32 tests)
 ```
 
 ### Data
 
-Alle data staat in `data/` als JSON-bestanden. Deze map is gitignored. Afbeeldingen staan in `data/files/`. Back-up = gewoon de `data/` map kopiëren.
+Alle data staat in `data/` als JSON-bestanden. Deze map is gitignored. Afbeeldingen en PDFs staan in `data/files/`. Back-up = gewoon de `data/` map kopiëren.
 
 ### Tests draaien
 
@@ -115,14 +116,12 @@ npm test
 
 ### Claude Code gebruiken
 
-Om verder te werken met Claude Code, open een terminal in de `grisburgh/` map:
+Om verder te werken met Claude Code, open een terminal in de project root:
 
 ```bash
-cd ~/apps/alan/grisburgh
+cd ~/apps/alan
 claude
 ```
-
-De plan-file (`zany-stirring-rose.md`) beschrijft de volledige architectuur en het implementatieplan.
 
 ## Scripts
 
