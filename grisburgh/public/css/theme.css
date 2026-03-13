@@ -1,0 +1,152 @@
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #13100b; }
+::-webkit-scrollbar-thumb { background: #3d3428; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #4a3f32; }
+
+/* Section tabs */
+.section-tab {
+  padding: 8px 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #8a7d6a;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+.section-tab:hover { color: #c4b89a; }
+.section-tab.active { color: #d4a843; border-bottom-color: #d4a843; }
+
+/* Sections */
+.section { display: none; height: 100%; overflow-y: auto; }
+.section.active { display: flex; flex-direction: column; }
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.active { display: flex; }
+
+/* Modal */
+.modal {
+  background: #1e1914;
+  border: 1px solid #3d3428;
+  border-radius: 12px;
+  width: 92%; max-width: 720px;
+  max-height: 85vh;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #3d3428;
+}
+.modal-close {
+  font-size: 24px; color: #8a7d6a;
+  background: none; border: none;
+  cursor: pointer; line-height: 1;
+}
+.modal-close:hover { color: #f0e8d4; }
+
+/* DM-only elements */
+.player-mode .dm-only { display: none !important; }
+
+/* Entity type accent colors */
+.accent-personages { color: #3a6a4a; }
+.accent-locaties { color: #3a6a9a; }
+.accent-organisaties { color: #8b2a2a; }
+.accent-voorwerpen { color: #b8763a; }
+.accent-archief { color: #6a4a8a; }
+
+.bar-personages { background: #3a6a4a; }
+.bar-locaties { background: #3a6a9a; }
+.bar-organisaties { background: #8b2a2a; }
+.bar-voorwerpen { background: #b8763a; }
+
+/* Chip base */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+.chip:hover { filter: brightness(1.2); }
+.chip-npc  { background: rgba(58,106,74,0.2); color: #6abd83; }
+.chip-loc  { background: rgba(58,106,154,0.2); color: #7ab0d4; }
+.chip-org  { background: rgba(139,42,42,0.2); color: #d46a6a; }
+.chip-item { background: rgba(184,118,58,0.2); color: #d4a06a; }
+.chip-doc  { background: rgba(106,74,138,0.2); color: #b88adb; }
+
+/* Upload zone */
+.upload-zone {
+  border: 2px dashed #3d3428;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  color: #8a7d6a;
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+.upload-zone:hover { border-color: #a68832; color: #c4b89a; }
+
+/* Stat block */
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat-box {
+  text-align: center;
+  padding: 8px;
+  background: #2a231b;
+  border: 1px solid #3d3428;
+  border-radius: 4px;
+}
+.stat-label { font-family: 'Cinzel', serif; font-size: 10px; color: #8a7d6a; text-transform: uppercase; letter-spacing: 1px; }
+.stat-val { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: #f0e8d4; }
+.stat-mod { font-size: 12px; color: #c4b89a; }
+
+/* Archief revelation states */
+.state-hidden { opacity: 0.35; border-style: dashed !important; }
+.state-hidden .doc-card-body { filter: saturate(0.3); }
+.state-blurred .doc-card-body { filter: blur(6px); user-select: none; pointer-events: none; }
+
+/* Parchment text styling */
+.parchment-block {
+  font-family: 'IM Fell English', serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #2a2015;
+  background: #f2e6c8;
+  padding: 20px 24px;
+  border-radius: 4px;
+  border: 1px solid #d4c9a8;
+}
+.parch-title { text-align: center; font-weight: 700; font-size: 18px; margin: 8px 0; }
+.parch-rule { border: none; border-top: 1px solid #b8a88a; margin: 12px 0; }
+.parch-sig { text-align: right; font-style: italic; margin-top: 12px; }
+
+/* Category-specific card backgrounds (archief) */
+.cat-brieven { background: #f2e6c8; color: #2a2015; border-color: #d4c9a8; }
+.cat-pers    { background: #e8e2d8; color: #1a1815; border-color: #333; }
+.cat-kaarten { background: #e0d8c4; color: #1a2a20; border-color: #a0987a; }
+.cat-codex   { background: #1a1520; color: #e0d8f0; border-color: #3a3050; }
+.cat-logboek { background: #2a231b; color: #f0e8d4; border-color: #3d3428; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .section-tab { padding: 6px 12px; font-size: 12px; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
