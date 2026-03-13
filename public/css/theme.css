@@ -100,6 +100,23 @@
 .chip-item { background: rgba(184,118,58,0.2); color: #d4a06a; }
 .chip-doc  { background: rgba(106,74,138,0.2); color: #b88adb; }
 
+/* Autocomplete dropdown */
+.autocomplete-wrap { position: relative; }
+.autocomplete-list {
+  position: absolute; left: 0; right: 0; top: 100%;
+  z-index: 60; max-height: 180px; overflow-y: auto;
+  background: #2a231b; border: 1px solid #3d3428;
+  border-radius: 0 0 6px 6px; display: none;
+}
+.autocomplete-list.open { display: block; }
+.autocomplete-item {
+  padding: 6px 10px; cursor: pointer;
+  font-size: 13px; color: #c4b89a;
+}
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: #3d3428; color: #f0e8d4;
+}
+
 /* Upload zone */
 .upload-zone {
   border: 2px dashed #3d3428;

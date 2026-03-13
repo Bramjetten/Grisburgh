@@ -17,6 +17,8 @@ function filterEntityForPlayer(entity, dmState) {
   if (!dmState.secretReveals[entity.id]) {
     delete e.data.geheim;
   }
+  // Strip stats — DM only
+  delete e.stats;
   return e;
 }
 

@@ -438,12 +438,15 @@ export function openArchiefEditor(editId) {
 
 let editorTags = { npcs: [], locs: [], docs: [] };
 
+let allNames = {};
+
 window._openArchiefEditor = async (editId) => {
   let d = null;
   if (editId) {
     try { d = await api.getArchief(editId); } catch { return; }
   }
   editorTags = { npcs: d?.npcs?.slice() || [], locs: d?.locs?.slice() || [], docs: d?.docs?.slice() || [] };
+  allNames = await api.allNames();
 
   let body = `<form id="archief-form" class="space-y-4">
     <div>
@@ -497,9 +500,9 @@ window._openArchiefEditor = async (editId) => {
 
   // Tag editors
   const tagMeta = {
-    npcs: { icon: '\ud83d\udc64', label: 'Personages', chip: 'chip-npc' },
-    locs: { icon: '\ud83c\udff0', label: 'Locaties', chip: 'chip-loc' },
-    docs: { icon: '\ud83d\udcdc', label: 'Documenten', chip: 'chip-doc' },
+    npcs: { icon: '\ud83d\udc64', label: 'Personages', chip: 'chip-npc', nameKey: 'personages' },
+    locs: { icon: '\ud83c\udff0', label: 'Locaties', chip: 'chip-loc', nameKey: 'locaties' },
+    docs: { icon: '\ud83d\udcdc', label: 'Documenten', chip: 'chip-doc', nameKey: 'archief' },
   };
   for (const [field, fm] of Object.entries(tagMeta)) {
     body += `
@@ -509,9 +512,13 @@ window._openArchiefEditor = async (editId) => {
           ${editorTags[field].map(n => `<span class="chip ${fm.chip}">${esc(n)} <span class="cursor-pointer ml-1" onclick="window._removeATag('${field}','${esc(n)}')">\u00d7</span></span>`).join('')}
         </div>
         <div class="flex gap-1">
-          <input id="atag-input-${field}" placeholder="${fm.label}..."
-            class="flex-1 px-2 py-1 bg-room-bg border border-room-border rounded text-ink-bright text-sm focus:border-gold-dim focus:outline-none"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();window._addATag('${field}')}">
+          <div class="flex-1 autocomplete-wrap">
+            <input id="atag-input-${field}" placeholder="${fm.label}..."
+              class="w-full px-2 py-1 bg-room-bg border border-room-border rounded text-ink-bright text-sm focus:border-gold-dim focus:outline-none"
+              oninput="window._showASuggestions('${field}','${fm.nameKey}')"
+              onkeydown="window._handleATagKey(event,'${field}')">
+            <div id="atag-suggestions-${field}" class="autocomplete-list"></div>
+          </div>
           <button type="button" onclick="window._addATag('${field}')"
             class="px-2 py-1 bg-room-elevated border border-room-border rounded text-ink-dim text-sm hover:text-ink-bright">+</button>
         </div>
@@ -615,12 +622,15 @@ window._openArchiefEditor = async (editId) => {
   });
 };
 
-window._addATag = (field) => {
+const ATAG_NAME_KEY = { npcs: 'personages', locs: 'locaties', docs: 'archief' };
+
+window._addATag = (field, name) => {
   const input = document.getElementById(`atag-input-${field}`);
-  const val = input.value.trim();
+  const val = (name || input.value).trim();
   if (!val || editorTags[field].includes(val)) return;
   editorTags[field].push(val);
   input.value = '';
+  window._hideASuggestions(field);
   refreshATags(field);
 };
 
@@ -628,6 +638,37 @@ window._removeATag = (field, name) => {
   editorTags[field] = editorTags[field].filter(n => n !== name);
   refreshATags(field);
 };
+
+window._showASuggestions = (field, nameKey) => {
+  const input = document.getElementById(`atag-input-${field}`);
+  const list = document.getElementById(`atag-suggestions-${field}`);
+  const q = input.value.trim().toLowerCase();
+  const names = (allNames[nameKey] || []).filter(n =>
+    !editorTags[field].includes(n) && (!q || n.toLowerCase().includes(q))
+  );
+  if (names.length === 0) { list.classList.remove('open'); return; }
+  list.innerHTML = names.map(n =>
+    `<div class="autocomplete-item" onmousedown="window._addATag('${field}','${esc(n)}')">${esc(n)}</div>`
+  ).join('');
+  list.classList.add('open');
+};
+
+window._hideASuggestions = (field) => {
+  const list = document.getElementById(`atag-suggestions-${field}`);
+  if (list) list.classList.remove('open');
+};
+
+window._handleATagKey = (ev, field) => {
+  if (ev.key === 'Enter') { ev.preventDefault(); window._addATag(field); }
+  if (ev.key === 'Escape') { window._hideASuggestions(field); }
+};
+
+document.addEventListener('focusout', (ev) => {
+  if (ev.target.id?.startsWith('atag-input-')) {
+    const field = ev.target.id.replace('atag-input-', '');
+    setTimeout(() => window._hideASuggestions(field), 150);
+  }
+});
 
 function refreshATags(field) {
   const fm = { npcs: 'chip-npc', locs: 'chip-loc', docs: 'chip-doc' };

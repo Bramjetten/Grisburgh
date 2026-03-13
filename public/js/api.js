@@ -55,4 +55,21 @@ export const api = {
 
   // Meta
   meta: () => request('/meta'),
+
+  // Get all entity names grouped by type (for link autocomplete)
+  async allNames() {
+    const types = ['personages', 'locaties', 'organisaties', 'voorwerpen'];
+    const result = {};
+    await Promise.all(types.map(async t => {
+      try {
+        const list = await request(`/entities/${t}`);
+        result[t] = list.map(e => e.name);
+      } catch { result[t] = []; }
+    }));
+    try {
+      const archief = await request('/archief');
+      result.archief = (archief.documents || []).map(d => d.name);
+    } catch { result.archief = []; }
+    return result;
+  },
 };

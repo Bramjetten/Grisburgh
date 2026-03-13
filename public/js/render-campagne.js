@@ -211,8 +211,8 @@ window._openDetail = async (tab, id) => {
     `;
   }
 
-  // Stat block for personages
-  if (tab === 'personages' && e.stats) {
+  // Stat block for personages (DM only)
+  if (isDM() && tab === 'personages' && e.stats) {
     const s = e.stats;
     const mod = (v) => {
       if (!v) return '\u2014';
@@ -361,12 +361,15 @@ export function openEditor(editId) {
   window._openEditor(activeTab, editId);
 }
 
+let allNames = {};
+
 window._openEditor = async (tab, editId) => {
   const schema = SCHEMA[tab];
   let e = null;
   if (editId) {
     try { e = await api.getEntity(tab, editId); } catch { return; }
   }
+  allNames = await api.allNames();
 
   editorTags = {};
   for (const lt of LINK_TYPES) {
@@ -484,9 +487,13 @@ window._openEditor = async (tab, editId) => {
           `).join('')}
         </div>
         <div class="flex gap-1">
-          <input id="tag-input-${lt}" placeholder="${lm.label || lt}..."
-            class="flex-1 px-2 py-1 bg-room-bg border border-room-border rounded text-ink-bright text-sm focus:border-gold-dim focus:outline-none"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();window._addTag('${lt}')}">
+          <div class="flex-1 autocomplete-wrap">
+            <input id="tag-input-${lt}" placeholder="${lm.label || lt}..."
+              class="w-full px-2 py-1 bg-room-bg border border-room-border rounded text-ink-bright text-sm focus:border-gold-dim focus:outline-none"
+              oninput="window._showSuggestions('${lt}')"
+              onkeydown="window._handleTagKey(event,'${lt}')">
+            <div id="tag-suggestions-${lt}" class="autocomplete-list"></div>
+          </div>
           <button type="button" onclick="window._addTag('${lt}')"
             class="px-2 py-1 bg-room-elevated border border-room-border rounded text-ink-dim text-sm hover:text-ink-bright">+</button>
         </div>
@@ -545,12 +552,13 @@ window._openEditor = async (tab, editId) => {
   });
 };
 
-window._addTag = (lt) => {
+window._addTag = (lt, name) => {
   const input = document.getElementById(`tag-input-${lt}`);
-  const val = input.value.trim();
+  const val = (name || input.value).trim();
   if (!val || editorTags[lt].includes(val)) return;
   editorTags[lt].push(val);
   input.value = '';
+  window._hideSuggestions(lt);
   refreshTags(lt);
 };
 
@@ -558,6 +566,38 @@ window._removeTag = (lt, name) => {
   editorTags[lt] = editorTags[lt].filter(n => n !== name);
   refreshTags(lt);
 };
+
+window._showSuggestions = (lt) => {
+  const input = document.getElementById(`tag-input-${lt}`);
+  const list = document.getElementById(`tag-suggestions-${lt}`);
+  const q = input.value.trim().toLowerCase();
+  const names = (allNames[lt] || []).filter(n =>
+    !editorTags[lt].includes(n) && (!q || n.toLowerCase().includes(q))
+  );
+  if (names.length === 0) { list.classList.remove('open'); return; }
+  list.innerHTML = names.map(n =>
+    `<div class="autocomplete-item" onmousedown="window._addTag('${lt}','${esc(n)}')">${esc(n)}</div>`
+  ).join('');
+  list.classList.add('open');
+};
+
+window._hideSuggestions = (lt) => {
+  const list = document.getElementById(`tag-suggestions-${lt}`);
+  if (list) list.classList.remove('open');
+};
+
+window._handleTagKey = (ev, lt) => {
+  if (ev.key === 'Enter') { ev.preventDefault(); window._addTag(lt); }
+  if (ev.key === 'Escape') { window._hideSuggestions(lt); }
+};
+
+// Close suggestions on blur (slight delay so mousedown on item fires first)
+document.addEventListener('focusout', (ev) => {
+  if (ev.target.id?.startsWith('tag-input-')) {
+    const lt = ev.target.id.replace('tag-input-', '');
+    setTimeout(() => window._hideSuggestions(lt), 150);
+  }
+});
 
 function refreshTags(lt) {
   const lm = TYPE_META[lt] || { icon: '\ud83d\udcdc', chip: 'chip-doc' };

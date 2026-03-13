@@ -171,25 +171,6 @@ window._openDashDetail = async (panel, id) => {
   // Image
   body += `<div class="mb-4"><img src="${api.fileUrl(e.id)}" class="w-full max-h-64 object-contain rounded" onerror="this.parentElement.style.display='none'"></div>`;
 
-  // Stat block
-  if (panel === 'personages' && e.stats) {
-    const s = e.stats;
-    const mod = (v) => { if (!v) return '\u2014'; const m = Math.floor((parseInt(v) - 10) / 2); return m >= 0 ? `+${m}` : `${m}`; };
-    body += `
-      <div class="mb-4 p-4 bg-room-elevated rounded border border-room-border">
-        <div class="flex gap-4 mb-3 text-sm">
-          ${s.ac ? `<span><span class="text-ink-dim">AC</span> <span class="font-bold">${esc(s.ac)}</span></span>` : ''}
-          ${s.hp ? `<span><span class="text-ink-dim">HP</span> <span class="font-bold">${esc(s.hp)}</span></span>` : ''}
-          ${s.speed ? `<span><span class="text-ink-dim">Speed</span> <span class="font-bold">${esc(s.speed)}</span></span>` : ''}
-        </div>
-        <div class="stat-grid">
-          ${['str','dex','con','int','wis','cha'].map(a => `
-            <div class="stat-box"><div class="stat-label">${a.toUpperCase()}</div><div class="stat-val">${s[a] || '\u2014'}</div><div class="stat-mod">${mod(s[a])}</div></div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-  }
 
   // Description and fields
   const d = e.data || {};
