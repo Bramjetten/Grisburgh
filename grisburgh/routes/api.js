@@ -75,25 +75,31 @@ router.get('/entities/:type/:id', attachRole, (req, res) => {
 });
 
 router.post('/entities/:type', requireDM, (req, res) => {
-  const { type } = req.params;
-  if (!ENTITY_TYPES.includes(type)) return res.status(400).json({ error: 'Ongeldig type' });
-  const entities = storage.readJSON('entities.json');
-  const dmState = storage.readJSON('dm-state.json');
-  const entity = {
-    id: 'e_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-    name: req.body.name || 'Naamloos',
-    icon: req.body.icon || '',
-    subtype: req.body.subtype || '',
-    data: req.body.data || {},
-    links: req.body.links || { personages: [], locaties: [], organisaties: [], voorwerpen: [], archief: [] },
-    stats: req.body.stats || null,
-  };
-  entities[type].push(entity);
-  dmState.visibility[entity.id] = 'hidden';
-  storage.writeJSON('entities.json', entities);
-  storage.writeJSON('dm-state.json', dmState);
-  req.app.get('io').emit('entity:updated', { type, id: entity.id });
-  res.status(201).json(entity);
+  try {
+    const { type } = req.params;
+    if (!ENTITY_TYPES.includes(type)) return res.status(400).json({ error: 'Ongeldig type' });
+    const entities = storage.readJSON('entities.json');
+    const dmState = storage.readJSON('dm-state.json');
+    if (!entities[type]) entities[type] = [];
+    const entity = {
+      id: 'e_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+      name: req.body.name || 'Naamloos',
+      icon: req.body.icon || '',
+      subtype: req.body.subtype || '',
+      data: req.body.data || {},
+      links: req.body.links || { personages: [], locaties: [], organisaties: [], voorwerpen: [], archief: [] },
+      stats: req.body.stats || null,
+    };
+    entities[type].push(entity);
+    dmState.visibility[entity.id] = 'hidden';
+    storage.writeJSON('entities.json', entities);
+    storage.writeJSON('dm-state.json', dmState);
+    req.app.get('io').emit('entity:updated', { type, id: entity.id });
+    res.status(201).json(entity);
+  } catch (err) {
+    console.error('POST /entities/:type error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put('/entities/:type/:id', requireDM, (req, res) => {
